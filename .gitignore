@@ -1,0 +1,59 @@
+# ===========================
+# HTML/CSS/JS プロダクト用
+# ===========================
+
+# 依存関係
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ビルド出力
+dist/
+build/
+out/
+*.min.js
+*.min.css
+
+# 一時ファイル
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+
+# エディタ・IDE設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+logs/
+
+# 環境変数ファイル
+.env
+.env.local
+.env.*.local
+
+# ===========================
+# Claude Code ローカル設定
+# ===========================
+
+# Claude Code設定ディレクトリ
+.claude/
+
+# Claudeセッション履歴
+.claude-sessions/
+
+# ===========================
+# プロジェクト固有
+# ===========================
+
+# ドキュメント・仕様書
+docs/
