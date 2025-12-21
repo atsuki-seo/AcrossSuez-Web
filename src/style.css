@@ -264,3 +264,54 @@ button:disabled {
   background-color: #ffc04d;
   border-color: #ffc04d;
 }
+
+/* ツールチップ */
+.tooltip {
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 9999;
+  border: 1px solid #f0a020;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.tooltip.hidden {
+  display: none;
+}
+
+.tooltip p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 戦闘情報パネル */
+#combat-info {
+  margin-top: 10px;
+}
+
+#combat-info h4 {
+  color: #f0a020;
+  font-size: 13px;
+  margin: 8px 0 4px 0;
+}
+
+.combat-unit-entry {
+  color: #e0e0e0;
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: rgba(240, 160, 32, 0.1);
+  border-left: 2px solid #f0a020;
+  margin: 4px 0;
+}
+
+.info-text {
+  color: #888;
+  font-size: 12px;
+  font-style: italic;
+  margin: 8px 0;
+}

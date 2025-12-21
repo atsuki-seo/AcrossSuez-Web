@@ -41,6 +41,16 @@
           <button id="end-action-btn" disabled>行動終了</button>
         </section>
 
+        <section id="combat-info">
+          <h3>戦闘情報</h3>
+          <div id="attacker-list">
+            <p class="info-text">攻撃ユニットなし</p>
+          </div>
+          <div id="defender-info">
+            <p class="info-text">防御ユニットなし</p>
+          </div>
+        </section>
+
         <section id="game-log">
           <h3>ゲームログ</h3>
           <div id="log-content"></div>
@@ -56,6 +66,11 @@
       <p id="game-over-message"></p>
       <button id="restart-btn">新規ゲーム</button>
     </div>
+  </div>
+
+  <!-- 移動コストツールチップ -->
+  <div id="move-tooltip" class="tooltip hidden">
+    <p id="tooltip-content"></p>
   </div>
 
   <script type="module" src="/src/main.js"></script>

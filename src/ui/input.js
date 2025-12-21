@@ -4,7 +4,7 @@ import { pixelToHex, highlightHexes, highlightSelectedHex, render } from './rend
 import { hexToPixel, getContext, hexes } from './renderer.js';
 import { getViewportTransform, setViewportTransform } from './renderer.js';
 import { gameState, isIsraeliPhase, isEgyptianPhase } from '../engine/gamestate.js';
-import { getReachableHexes, moveUnit, getNeighbors } from '../engine/movement.js';
+import { getReachableHexes, getReachableHexesWithCost, moveUnit, getNeighbors } from '../engine/movement.js';
 import { resolveCombat } from '../engine/combat.js';
 import { placeUnits } from '../engine/units.js';
 
@@ -21,6 +21,7 @@ const DRAG_THRESHOLD = 5;  // ドラッグ判定閾値（ピクセル）
 // ===========================
 let selectedUnit = null;
 let reachableHexes = [];
+let reachableHexesWithCost = [];  // コスト情報付き移動可能ヘクス
 
 // 戦闘モード
 let selectedAttackers = [];
@@ -34,12 +35,17 @@ let dragStartY = 0;
 let totalDragDistance = 0;
 let canvas = null;
 
+// ツールチップ
+let tooltipElement = null;
+let tooltipContent = null;
+
 // ===========================
 // ユニット選択（移動モード）
 // ===========================
 function selectUnit(unit) {
   selectedUnit = unit;
   reachableHexes = getReachableHexes(unit);
+  reachableHexesWithCost = getReachableHexesWithCost(unit);  // コスト情報付きで取得
 
   console.log(`Selected unit: ${unit.id} at ${unit.hex}`);
   console.log(`Reachable hexes: ${reachableHexes.length}`);
@@ -48,6 +54,8 @@ function selectUnit(unit) {
 function deselectUnit() {
   selectedUnit = null;
   reachableHexes = [];
+  reachableHexesWithCost = [];  // コスト情報もクリア
+  hideTooltip();  // ツールチップ非表示
 }
 
 // ===========================
@@ -59,6 +67,7 @@ function selectAttacker(unit) {
     console.log(`Attacker added: ${unit.id}`);
   }
   updateAttackButton();
+  if (window.updateCombatUI) window.updateCombatUI(selectedAttackers, selectedDefender);
 }
 
 function toggleAttacker(unit) {
@@ -71,18 +80,21 @@ function toggleAttacker(unit) {
     console.log(`Attacker added: ${unit.id}`);
   }
   updateAttackButton();
+  if (window.updateCombatUI) window.updateCombatUI(selectedAttackers, selectedDefender);
 }
 
 function selectDefender(unit) {
   selectedDefender = unit;
   console.log(`Defender selected: ${unit.id}`);
   updateAttackButton();
+  if (window.updateCombatUI) window.updateCombatUI(selectedAttackers, selectedDefender);
 }
 
 function clearCombatSelection() {
   selectedAttackers = [];
   selectedDefender = null;
   hideAttackButton();
+  if (window.updateCombatUI) window.updateCombatUI([], null);
 }
 
 // ===========================
@@ -331,22 +343,42 @@ function handleMouseDown(event) {
   }
 }
 
-// ドラッグ中のパン
+// ドラッグ中のパン + ツールチップ表示
 function handleMouseMove(event) {
-  if (!isDragging) return;
+  // パン操作中
+  if (isDragging) {
+    const deltaX = event.clientX - dragStartX;
+    const deltaY = event.clientY - dragStartY;
 
-  const deltaX = event.clientX - dragStartX;
-  const deltaY = event.clientY - dragStartY;
+    totalDragDistance += Math.abs(deltaX) + Math.abs(deltaY);
 
-  totalDragDistance += Math.abs(deltaX) + Math.abs(deltaY);
+    const vt = getViewportTransform();
+    setViewportTransform(vt.x + deltaX, vt.y + deltaY, vt.zoom);
 
-  const vt = getViewportTransform();
-  setViewportTransform(vt.x + deltaX, vt.y + deltaY, vt.zoom);
+    dragStartX = event.clientX;
+    dragStartY = event.clientY;
 
-  dragStartX = event.clientX;
-  dragStartY = event.clientY;
+    redrawWithHighlights();
+    return;
+  }
 
-  redrawWithHighlights();
+  // ツールチップ表示（ユニット選択中かつ移動可能ヘクスあり）
+  if (selectedUnit && reachableHexesWithCost.length > 0) {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const hex = pixelToHex(x, y);
+    if (hex) {
+      const costInfo = reachableHexesWithCost.find(h => h.hexId === hex.id);
+      if (costInfo) {
+        showTooltip(event.clientX, event.clientY, costInfo);
+        return;
+      }
+    }
+  }
+
+  hideTooltip();
 }
 
 // パン終了
@@ -363,6 +395,27 @@ function handleMouseLeave(event) {
     isDragging = false;
     canvas.style.cursor = 'default';
   }
+  hideTooltip();
+}
+
+// ===========================
+// ツールチップ表示・非表示
+// ===========================
+function showTooltip(screenX, screenY, costInfo) {
+  if (!tooltipElement || !tooltipContent) return;
+
+  const cost = costInfo.cost.toFixed(1);
+  const remaining = costInfo.remainingMP.toFixed(1);
+  tooltipContent.textContent = `コスト: ${cost} MP / 残: ${remaining} MP`;
+
+  tooltipElement.style.left = `${screenX + 15}px`;
+  tooltipElement.style.top = `${screenY + 15}px`;
+  tooltipElement.classList.remove('hidden');
+}
+
+function hideTooltip() {
+  if (!tooltipElement) return;
+  tooltipElement.classList.add('hidden');
 }
 
 // ===========================
@@ -370,6 +423,10 @@ function handleMouseLeave(event) {
 // ===========================
 export function initInputHandler(canvasElement, attackBtn) {
   canvas = canvasElement;
+
+  // ツールチップ要素取得
+  tooltipElement = document.getElementById('move-tooltip');
+  tooltipContent = document.getElementById('tooltip-content');
 
   // 既存のクリックイベント
   canvas.addEventListener('click', (e) => handleCanvasClick(canvas, e));

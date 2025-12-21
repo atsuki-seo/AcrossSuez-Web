@@ -134,6 +134,59 @@ export function getReachableHexes(unit) {
   return Array.from(results);
 }
 
+// コスト情報付きの移動可能ヘクス取得（UI表示用）
+export function getReachableHexesWithCost(unit) {
+  if (!canMove()) return [];
+
+  const startHex = hexes[unit.hex];
+  const maxMP = unit.move + movementModifier();
+  if (maxMP <= 0) return [];
+
+  const enemyZOC = computeZOC(unit.side === "ISR" ? "EGY" : "ISR");
+
+  const visited = new Map(); // hexId -> { remainingMP, cost }
+  const frontier = [{ hex: startHex, mp: maxMP, totalCost: 0 }];
+
+  visited.set(startHex.id, { remainingMP: maxMP, cost: 0 });
+
+  while (frontier.length > 0) {
+    const { hex, mp, totalCost } = frontier.shift();
+
+    getNeighbors(hex).forEach(next => {
+      // Cannot enter enemy-occupied hex
+      if (Object.values(gameState.units).some(u => u.hex === next.id)) return;
+
+      let cost = baseMoveCost(next) + edgeCost(hex, next);
+      const road = roadCost(hex, next);
+      if (road !== null) cost = road;
+
+      const remaining = mp - cost;
+      const newTotalCost = totalCost + cost;
+      if (remaining < 0) return;
+
+      // ZOC: entering enemy ZOC stops further movement
+      const inEnemyZOC = enemyZOC.has(next.id);
+
+      if (!visited.has(next.id) || visited.get(next.id).remainingMP < remaining) {
+        visited.set(next.id, { remainingMP: remaining, cost: newTotalCost });
+        if (!inEnemyZOC) {
+          frontier.push({ hex: next, mp: remaining, totalCost: newTotalCost });
+        }
+      }
+    });
+  }
+
+  // visited Map からコスト情報付きの配列を生成
+  const results = [];
+  visited.forEach((info, hexId) => {
+    if (hexId !== startHex.id) {  // 開始ヘクスは除外
+      results.push({ hexId, cost: info.cost, remainingMP: info.remainingMP });
+    }
+  });
+
+  return results;
+}
+
 // ----------------------------
 // 5. 実移動
 // ----------------------------

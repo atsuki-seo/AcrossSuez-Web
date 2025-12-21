@@ -13,6 +13,7 @@ import './debug.js';
 // ===========================
 let turnDisplay, phaseDisplay, logContent, nextPhaseBtn, attackBtn;
 let gameOverModal, gameOverTitle, gameOverMessage, restartBtn;
+let attackerListElement, defenderInfoElement;
 
 // ===========================
 // UI更新関数
@@ -44,6 +45,35 @@ function updateUI() {
   // ゲーム終了チェック
   if (gameState.gameOver) {
     showGameOverModal(gameState.gameOver);
+  }
+}
+
+// 戦闘UI更新関数
+function updateCombatUI(attackers, defender) {
+  if (!attackerListElement || !defenderInfoElement) return;
+
+  // 攻撃ユニット一覧を更新
+  if (!attackers || attackers.length === 0) {
+    attackerListElement.innerHTML = '<p class="info-text">攻撃ユニットなし</p>';
+  } else {
+    attackerListElement.innerHTML = '<h4>攻撃側:</h4>';
+    attackers.forEach(unit => {
+      const div = document.createElement('div');
+      div.className = 'combat-unit-entry';
+      div.textContent = `${unit.id} (戦闘力: ${unit.combatStrength || 1})`;
+      attackerListElement.appendChild(div);
+    });
+  }
+
+  // 防御ユニット情報を更新
+  if (!defender) {
+    defenderInfoElement.innerHTML = '<p class="info-text">防御ユニットなし</p>';
+  } else {
+    defenderInfoElement.innerHTML = '<h4>防御側:</h4>';
+    const div = document.createElement('div');
+    div.className = 'combat-unit-entry';
+    div.textContent = `${defender.id} (戦闘力: ${defender.combatStrength || 1})`;
+    defenderInfoElement.appendChild(div);
   }
 }
 
@@ -97,6 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
   nextPhaseBtn = document.getElementById('next-phase-btn');
   attackBtn = document.getElementById('attack-btn');
 
+  // 戦闘UI要素取得
+  attackerListElement = document.getElementById('attacker-list');
+  defenderInfoElement = document.getElementById('defender-info');
+
   // ゲーム終了モーダル要素取得
   gameOverModal = document.getElementById('game-over-modal');
   gameOverTitle = document.getElementById('game-over-title');
@@ -137,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // デバッグ用にUI更新関数をグローバルに公開
   if (typeof window !== 'undefined') {
     window.updateUI = updateUI;
+    window.updateCombatUI = updateCombatUI;  // 戦闘UI更新
     window.redrawAll = redrawAll;
     window.handleResize = handleResize;  // デバッグ用
   }
