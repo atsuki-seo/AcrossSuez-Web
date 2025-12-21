@@ -2,10 +2,19 @@
 
 import { pixelToHex, highlightHexes, highlightSelectedHex, render } from './renderer.js';
 import { hexToPixel, getContext, hexes } from './renderer.js';
+import { getViewportTransform, setViewportTransform } from './renderer.js';
 import { gameState, isIsraeliPhase, isEgyptianPhase } from '../engine/gamestate.js';
 import { getReachableHexes, moveUnit, getNeighbors } from '../engine/movement.js';
 import { resolveCombat } from '../engine/combat.js';
 import { placeUnits } from '../engine/units.js';
+
+// ===========================
+// ズーム・パン設定
+// ===========================
+const ZOOM_SENSITIVITY = 0.001;
+const MIN_ZOOM = 0.5;      // 最小50%
+const MAX_ZOOM = 3.0;      // 最大300%
+const DRAG_THRESHOLD = 5;  // ドラッグ判定閾値（ピクセル）
 
 // ===========================
 // 状態管理
@@ -17,6 +26,13 @@ let reachableHexes = [];
 let selectedAttackers = [];
 let selectedDefender = null;
 let attackBtnElement = null;
+
+// ズーム・パン状態
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let totalDragDistance = 0;
+let canvas = null;
 
 // ===========================
 // ユニット選択（移動モード）
@@ -152,6 +168,15 @@ function redrawWithHighlights() {
 // クリックハンドラ
 // ===========================
 export function handleCanvasClick(canvas, event) {
+  // 左クリック以外は無視（パン用途）
+  if (event.button !== 0) return;
+
+  // ドラッグ後のクリックは無視（閾値チェック）
+  if (totalDragDistance > DRAG_THRESHOLD) {
+    totalDragDistance = 0;
+    return;
+  }
+
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
@@ -266,11 +291,98 @@ function canSelectUnit(unit) {
 }
 
 // ===========================
+// ズーム・パンハンドラ
+// ===========================
+
+// マウスホイールでズーム
+function handleWheel(event) {
+  event.preventDefault();
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  const vt = getViewportTransform();
+  const oldZoom = vt.zoom;
+
+  // 新しいズーム値計算（ホイール上=拡大、下=縮小）
+  let newZoom = oldZoom - event.deltaY * ZOOM_SENSITIVITY;
+  newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+
+  // ズーム中心点調整（マウス位置を中心に）
+  const zoomRatio = newZoom / oldZoom;
+  const newX = mouseX - (mouseX - vt.x) * zoomRatio;
+  const newY = mouseY - (mouseY - vt.y) * zoomRatio;
+
+  setViewportTransform(newX, newY, newZoom);
+  redrawWithHighlights();
+}
+
+// 右クリックでパン開始
+function handleMouseDown(event) {
+  // 中クリック(1)または右クリック(2)でパン
+  if (event.button === 1 || event.button === 2) {
+    event.preventDefault();
+    isDragging = true;
+    dragStartX = event.clientX;
+    dragStartY = event.clientY;
+    totalDragDistance = 0;
+    canvas.style.cursor = 'grabbing';
+  }
+}
+
+// ドラッグ中のパン
+function handleMouseMove(event) {
+  if (!isDragging) return;
+
+  const deltaX = event.clientX - dragStartX;
+  const deltaY = event.clientY - dragStartY;
+
+  totalDragDistance += Math.abs(deltaX) + Math.abs(deltaY);
+
+  const vt = getViewportTransform();
+  setViewportTransform(vt.x + deltaX, vt.y + deltaY, vt.zoom);
+
+  dragStartX = event.clientX;
+  dragStartY = event.clientY;
+
+  redrawWithHighlights();
+}
+
+// パン終了
+function handleMouseUp(event) {
+  if (isDragging) {
+    isDragging = false;
+    canvas.style.cursor = 'default';
+  }
+}
+
+// Canvas外に出た場合
+function handleMouseLeave(event) {
+  if (isDragging) {
+    isDragging = false;
+    canvas.style.cursor = 'default';
+  }
+}
+
+// ===========================
 // エクスポート
 // ===========================
-export function initInputHandler(canvas, attackBtn) {
+export function initInputHandler(canvasElement, attackBtn) {
+  canvas = canvasElement;
+
+  // 既存のクリックイベント
   canvas.addEventListener('click', (e) => handleCanvasClick(canvas, e));
 
+  // ズーム・パンイベント
+  canvas.addEventListener('wheel', handleWheel, { passive: false });
+  canvas.addEventListener('mousedown', handleMouseDown);
+  canvas.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mouseup', handleMouseUp);
+  canvas.addEventListener('mouseleave', handleMouseLeave);
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());  // 右クリックメニュー無効化
+
+  // 攻撃ボタン
   attackBtnElement = attackBtn;
   if (attackBtnElement) {
     attackBtnElement.addEventListener('click', executeCombat);
