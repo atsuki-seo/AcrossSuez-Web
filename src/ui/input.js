@@ -228,6 +228,7 @@ function handleCombatClick(unitOnHex, shiftKey) {
       toggleAttacker(unitOnHex);
     } else {
       selectedAttackers = [unitOnHex];
+      updateAttackButton();
     }
     redrawWithHighlights();
     return;
