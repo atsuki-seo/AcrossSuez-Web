@@ -1,7 +1,7 @@
 // STEP5: Movement, ZOC, and Reachable Hex Calculation
 // 目的: SPI Across Suez の移動ルールをロジックとして確定させる
 
-import hexes from "./hexes.js";
+import hexes, { qrIndex } from "./hexes.js";
 import { gameState, movementModifier, canMove } from "./gamestate.js";
 import { checkBridgeFailure } from "./victory.js";
 
@@ -23,7 +23,7 @@ export function getNeighbors(hex) {
     .map(d => {
       const q = hex.q + d.dq;
       const r = hex.r + d.dr;
-      return Object.values(hexes).find(h => h.q === q && h.r === r);
+      return qrIndex.get(`${q},${r}`);
     })
     .filter(Boolean);
 }

@@ -85,6 +85,13 @@ hexes["0112"].special = { matzmed: true };
 });
 
 // ===========================
+// 4. axial座標インデックス構築（性能改善）
+// ===========================
+const qrIndex = new Map();
+Object.values(hexes).forEach(h => qrIndex.set(`${h.q},${h.r}`, h));
+
+// ===========================
 // エクスポート
 // ===========================
 export default hexes;
+export { qrIndex };
