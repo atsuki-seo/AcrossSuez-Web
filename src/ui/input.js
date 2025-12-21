@@ -119,6 +119,7 @@ function executeCombat() {
 
   clearCombatSelection();
   redrawWithHighlights();
+  if (window.updateUI) window.updateUI();
 }
 
 // ===========================
@@ -190,6 +191,7 @@ function handleMoveClick(unitOnHex, clickedHex) {
         console.log(`Unit ${selectedUnit.id} moved to ${clickedHex.id}`);
         deselectUnit();
         redrawWithHighlights();
+        if (window.updateUI) window.updateUI();
         return;
       }
     }
