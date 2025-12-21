@@ -189,6 +189,7 @@ function handleMoveClick(unitOnHex, clickedHex) {
       const moved = moveUnit(selectedUnit, clickedHex.id);
       if (moved) {
         console.log(`Unit ${selectedUnit.id} moved to ${clickedHex.id}`);
+        gameState.log.push(`Move: ${selectedUnit.id} -> ${clickedHex.id}`);
         deselectUnit();
         redrawWithHighlights();
         if (window.updateUI) window.updateUI();
