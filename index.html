@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Across Suez - SPIウォーゲーム</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Across Suez</h1>
+      <div id="game-status">
+        <span>ターン: <strong id="turn-display">1</strong></span>
+        <span>フェイズ: <strong id="phase-display">-</strong></span>
+      </div>
+    </header>
+
+    <main>
+      <div id="map-container">
+        <canvas id="map"></canvas>
+      </div>
+
+      <aside id="control-panel">
+        <section id="phase-controls">
+          <h3>フェイズ進行</h3>
+          <button id="next-phase-btn">次フェイズへ</button>
+        </section>
+
+        <section id="unit-info">
+          <h3>ユニット情報</h3>
+          <div id="selected-unit-info">
+            <p>ユニットを選択してください</p>
+          </div>
+        </section>
+
+        <section id="action-controls">
+          <h3>アクション</h3>
+          <button id="move-btn" disabled>移動</button>
+          <button id="attack-btn" disabled>攻撃</button>
+          <button id="end-action-btn" disabled>行動終了</button>
+        </section>
+
+        <section id="game-log">
+          <h3>ゲームログ</h3>
+          <div id="log-content"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <!-- ゲーム終了モーダル -->
+  <div id="game-over-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="game-over-title">ゲーム終了</h2>
+      <p id="game-over-message"></p>
+      <button id="restart-btn">新規ゲーム</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
