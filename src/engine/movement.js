@@ -65,9 +65,23 @@ function edgeCost(fromHex, toHex) {
   return 0;
 }
 
+function dirFromTo(fromHex, toHex) {
+  const dq = toHex.q - fromHex.q;
+  const dr = toHex.r - fromHex.r;
+  for (let dir = 0; dir < DIRS.length; dir++) {
+    if (DIRS[dir].dq === dq && DIRS[dir].dr === dr) return dir;
+  }
+  return null;
+}
+
 function roadCost(fromHex, toHex) {
-  if (!fromHex.edges?.road) return null;
-  return 0.5;
+  const roadDirs = fromHex.edges?.road;
+  if (!roadDirs || roadDirs.length === 0) return null;
+
+  const dir = dirFromTo(fromHex, toHex);
+  if (dir === null) return null;
+
+  return roadDirs.includes(dir) ? 0.5 : null;
 }
 
 // ----------------------------
