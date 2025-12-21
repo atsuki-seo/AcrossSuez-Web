@@ -1,6 +1,6 @@
 // Across Suez - メインエントリーポイント
 import './style.css';
-import { initRenderer, render, hexToPixel, getContext } from './ui/renderer.js';
+import { initRenderer, render, hexToPixel, getContext, updateCanvasSize } from './ui/renderer.js';
 import { placeUnits } from './engine/units.js';
 import { gameState, advancePhase } from './engine/gamestate.js';
 import { initInputHandler, clearSelection } from './ui/input.js';
@@ -65,6 +65,19 @@ function showGameOverModal(winner) {
 }
 
 // ===========================
+// リサイズハンドラ（デバウンス付き）
+// ===========================
+let resizeTimeout;
+function handleResize() {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    updateCanvasSize();
+    redrawAll();
+    console.log('Canvas resized and redrawn');
+  }, 300);
+}
+
+// ===========================
 // 初期化処理
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
@@ -118,10 +131,14 @@ document.addEventListener('DOMContentLoaded', () => {
     location.reload();
   });
 
+  // ウィンドウリサイズイベント
+  window.addEventListener('resize', handleResize);
+
   // デバッグ用にUI更新関数をグローバルに公開
   if (typeof window !== 'undefined') {
     window.updateUI = updateUI;
     window.redrawAll = redrawAll;
+    window.handleResize = handleResize;  // デバッグ用
   }
 
   console.log('Map and units rendered successfully!');

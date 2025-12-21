@@ -3,25 +3,78 @@
 
 import hexes from "../engine/hexes.js";
 
-export const HEX_SIZE = 30;           // 半径
-export const WIDTH = 1200;
-export const HEIGHT = 900;
+// 基準サイズ（デフォルト値）
+const BASE_WIDTH = 1600;
+const BASE_HEIGHT = 900;
+const BASE_HEX_SIZE = 30;
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT;  // 16:9
+
+// 現在の動的サイズ（リサイズ時に更新）
+let currentWidth = BASE_WIDTH;
+let currentHeight = BASE_HEIGHT;
+let currentHexSize = BASE_HEX_SIZE;
+let scale = 1.0;
 
 let canvas = null;
 let ctx = null;
+
+// Canvas解像度を動的に調整
+export function updateCanvasSize() {
+  if (!canvas) return;
+
+  // コンテナサイズを取得
+  const container = canvas.parentElement;
+  const containerWidth = container.clientWidth - 40;   // padding 20px * 2
+  const containerHeight = container.clientHeight - 40;
+
+  // アスペクト比を維持して最適サイズを計算
+  let newWidth, newHeight;
+  const containerRatio = containerWidth / containerHeight;
+
+  if (containerRatio > ASPECT_RATIO) {
+    // 高さ基準
+    newHeight = containerHeight;
+    newWidth = newHeight * ASPECT_RATIO;
+  } else {
+    // 幅基準
+    newWidth = containerWidth;
+    newHeight = newWidth / ASPECT_RATIO;
+  }
+
+  // 最小サイズ制限（800x450, 16:9）
+  newWidth = Math.max(800, newWidth);
+  newHeight = Math.max(450, newHeight);
+
+  // Canvas内部解像度を設定
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+
+  // Canvas表示サイズも同期（CSS）
+  canvas.style.width = `${newWidth}px`;
+  canvas.style.height = `${newHeight}px`;
+
+  // スケール比率を計算
+  scale = newWidth / BASE_WIDTH;
+
+  // ヘクスサイズとキャンバスサイズを更新
+  currentWidth = newWidth;
+  currentHeight = newHeight;
+  currentHexSize = BASE_HEX_SIZE * scale;
+
+  console.log(`Canvas resized: ${newWidth.toFixed(0)}x${newHeight.toFixed(0)}, scale: ${scale.toFixed(2)}`);
+}
 
 // 初期化
 export function initRenderer(canvasElement) {
   canvas = canvasElement;
   ctx = canvas.getContext("2d");
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
+  updateCanvasSize();  // 初回サイズ設定
 }
 
 // axial -> pixel (pointy-top, odd-r offset想定)
 export function hexToPixel(hex) {
-  const x = HEX_SIZE * Math.sqrt(3) * (hex.q + 0.5 * (hex.r & 1));
-  const y = HEX_SIZE * 1.5 * hex.r;
+  const x = currentHexSize * Math.sqrt(3) * (hex.q + 0.5 * (hex.r & 1));
+  const y = currentHexSize * 1.5 * hex.r;
   return { x, y };
 }
 
@@ -40,7 +93,7 @@ export function pixelToHex(px, py) {
     }
   });
 
-  return minDist < HEX_SIZE ? closest : null;
+  return minDist < currentHexSize ? closest : null;
 }
 
 function drawHex(x, y, size) {
@@ -69,9 +122,9 @@ function drawRoad(x, y, dir) {
   const angle = Math.PI / 180 * angles[dir];
   ctx.beginPath();
   ctx.moveTo(x, y);
-  ctx.lineTo(x + HEX_SIZE * Math.cos(angle), y + HEX_SIZE * Math.sin(angle));
+  ctx.lineTo(x + currentHexSize * Math.cos(angle), y + currentHexSize * Math.sin(angle));
   ctx.strokeStyle = "#555";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * scale;
   ctx.stroke();
 }
 
@@ -82,17 +135,17 @@ export function render(showIds = true) {
     return;
   }
 
-  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  ctx.clearRect(0, 0, currentWidth, currentHeight);
 
   Object.values(hexes).forEach(hex => {
     const { x, y } = hexToPixel(hex);
 
     // Hex body
-    drawHex(x, y, HEX_SIZE);
+    drawHex(x, y, currentHexSize);
     ctx.fillStyle = terrainColor(hex);
     ctx.fill();
     ctx.strokeStyle = "#444";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 * scale;
     ctx.stroke();
 
     // Roads
@@ -103,16 +156,16 @@ export function render(showIds = true) {
     // Hex ID
     if (showIds) {
       ctx.fillStyle = "#000";
-      ctx.font = "10px sans-serif";
+      ctx.font = `${10 * scale}px sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText(hex.id, x, y + 3);
+      ctx.fillText(hex.id, x, y + 3 * scale);
     }
 
     // Matzmed highlight
     if (hex.special?.matzmed) {
       ctx.strokeStyle = "red";
-      ctx.lineWidth = 3;
-      drawHex(x, y, HEX_SIZE - 2);
+      ctx.lineWidth = 3 * scale;
+      drawHex(x, y, currentHexSize - 2 * scale);
       ctx.stroke();
     }
   });
@@ -127,7 +180,7 @@ export function highlightHexes(hexIds, color = "rgba(255, 255, 0, 0.3)") {
     if (!hex) return;
 
     const { x, y } = hexToPixel(hex);
-    drawHex(x, y, HEX_SIZE - 2);
+    drawHex(x, y, currentHexSize - 2 * scale);
     ctx.fillStyle = color;
     ctx.fill();
   });
@@ -142,13 +195,18 @@ export function highlightSelectedHex(hexId, color = "rgba(0, 255, 0, 0.5)") {
 
   const { x, y } = hexToPixel(hex);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 4;
-  drawHex(x, y, HEX_SIZE - 2);
+  ctx.lineWidth = 4 * scale;
+  drawHex(x, y, currentHexSize - 2 * scale);
   ctx.stroke();
 }
 
 export function getContext() {
   return ctx;
+}
+
+// スケール値を取得
+export function getScale() {
+  return scale;
 }
 
 export { hexes };
