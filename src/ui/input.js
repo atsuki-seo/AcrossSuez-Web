@@ -27,6 +27,7 @@ let reachableHexesWithCost = [];  // コスト情報付き移動可能ヘクス
 let selectedAttackers = [];
 let selectedDefender = null;
 let attackBtnElement = null;
+let actionControlsTitle = null;
 
 // ズーム・パン状態
 let isDragging = false;
@@ -123,11 +124,13 @@ function showAttackButton() {
   if (!attackBtnElement) return;
   attackBtnElement.style.display = 'block';
   attackBtnElement.disabled = false;
+  if (actionControlsTitle) actionControlsTitle.style.display = 'block';
 }
 
 function hideAttackButton() {
   if (!attackBtnElement) return;
   attackBtnElement.style.display = 'none';
+  if (actionControlsTitle) actionControlsTitle.style.display = 'none';
 }
 
 function executeCombat() {
@@ -427,6 +430,9 @@ export function initInputHandler(canvasElement, attackBtn) {
   // ツールチップ要素取得
   tooltipElement = document.getElementById('move-tooltip');
   tooltipContent = document.getElementById('tooltip-content');
+
+  // アクションコントロールタイトル取得
+  actionControlsTitle = document.getElementById('action-controls-title');
 
   // 既存のクリックイベント
   canvas.addEventListener('click', (e) => handleCanvasClick(canvas, e));
