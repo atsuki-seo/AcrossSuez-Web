@@ -17,36 +17,118 @@
     </header>
 
     <main>
+      <!-- 左側パネル -->
+      <aside id="left-panel">
+        <section id="turn-track">
+          <h3>ターントラック</h3>
+          <div id="turn-track-container">
+            <div class="turn-cell" data-turn="1"><span class="turn-number">1</span><span class="night-marker">🌙</span></div>
+            <div class="turn-cell" data-turn="2"><span class="turn-number">2</span></div>
+            <div class="turn-cell" data-turn="3"><span class="turn-number">3</span></div>
+            <div class="turn-cell" data-turn="4"><span class="turn-number">4</span><span class="night-marker">🌙</span></div>
+            <div class="turn-cell" data-turn="5"><span class="turn-number">5</span></div>
+            <div class="turn-cell" data-turn="6"><span class="turn-number">6</span></div>
+            <div class="turn-cell" data-turn="7"><span class="turn-number">7</span><span class="night-marker">🌙</span></div>
+          </div>
+        </section>
+
+        <section id="terrain-cost">
+          <h3>地形効果表</h3>
+          <div id="tec-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>地形</th>
+                  <th>移動</th>
+                  <th>戦闘</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Clear</td>
+                  <td>1</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>Sand</td>
+                  <td>3</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>Road</td>
+                  <td>0.5</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>Trail</td>
+                  <td>2</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>C.Farm</td>
+                  <td>3</td>
+                  <td>-2</td>
+                </tr>
+                <tr>
+                  <td>E.Sand</td>
+                  <td>3</td>
+                  <td>-1</td>
+                </tr>
+                <tr>
+                  <td>BarLev</td>
+                  <td>1</td>
+                  <td>-1</td>
+                </tr>
+                <tr>
+                  <td>Ridge</td>
+                  <td>+2</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>Swamp</td>
+                  <td class="blocked">不可</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>Lake</td>
+                  <td class="blocked">不可</td>
+                  <td>-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </aside>
+
       <div id="map-container">
         <canvas id="map"></canvas>
+
+        <!-- 表示設定フロート -->
+        <div id="display-toggles" class="float-panel">
+          <h3>表示設定</h3>
+          <div class="toggle-list">
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-hex-id" checked>
+              <span>Hex ID</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-terrain-icon" checked>
+              <span>地形</span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <aside id="control-panel">
+
         <section id="phase-controls">
           <h3>フェイズ進行</h3>
           <button id="next-phase-btn">次フェイズへ</button>
         </section>
 
-        <section id="unit-info">
-          <h3>ユニット情報</h3>
-          <div id="selected-unit-info">
-            <p>ユニットを選択してください</p>
-          </div>
-        </section>
-
         <section id="action-controls">
           <h3 id="action-controls-title">アクション</h3>
           <button id="attack-btn" disabled>攻撃</button>
-        </section>
-
-        <section id="combat-info">
-          <h3>戦闘情報</h3>
-          <div id="attacker-list">
-            <p class="info-text">攻撃ユニットなし</p>
-          </div>
-          <div id="defender-info">
-            <p class="info-text">防御ユニットなし</p>
-          </div>
         </section>
 
         <section id="game-log">

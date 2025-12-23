@@ -2,6 +2,7 @@
 // hexes.jsを前提としたマップ描画エンジン
 
 import hexes from "../engine/hexes.js";
+import { displaySettings } from "../main.js";
 
 // 基準サイズ（デフォルト値）
 const BASE_WIDTH = 1600;
@@ -176,23 +177,116 @@ function drawHex(x, y, size) {
 }
 
 function terrainColor(hex) {
-  if (hex.base === "lake") return "#6fa8dc";
-  if (hex.base === "swamp") return "#38761d";
-  if (hex.overlay?.chineseFarm) return "#a4c2f4";
-  if (hex.overlay?.elevatedSand) return "#f6b26b";
-  if (hex.base === "sand") return "#ffe599";
-  return "#dddddd"; // clear
+  if (hex.base === "lake") return "#75AADB";
+  if (hex.base === "swamp") return "#6B8E23";
+  if (hex.overlay?.chineseFarm) return "#A8C686";
+  if (hex.overlay?.elevatedSand) return "#CCA37A";
+  if (hex.base === "sand") return "#E6D690";
+  return "#F0E6BC"; // clear
 }
 
-function drawRoad(x, y, dir, hexSize, lineScale) {
+// Edge描画（線種別）
+function drawEdge(x, y, dir, hexSize, lineScale, edgeType) {
   const angles = [-30, 30, 90, 150, 210, 270];
   const angle = Math.PI / 180 * angles[dir];
+  const endX = x + hexSize * Math.cos(angle);
+  const endY = y + hexSize * Math.sin(angle);
+
+  ctx.save();
+
+  switch (edgeType) {
+    case 'road':
+      // 道路：太線
+      ctx.strokeStyle = "#333333";
+      ctx.lineWidth = 2 * lineScale;
+      ctx.setLineDash([]);
+      break;
+    case 'trail':
+      // Trail：細い破線
+      ctx.strokeStyle = "#555555";
+      ctx.lineWidth = 1 * lineScale;
+      ctx.setLineDash([4 * lineScale, 2 * lineScale]);
+      break;
+    case 'ridge':
+      // Ridge：濃い茶色の太線
+      ctx.strokeStyle = "#8B4513";
+      ctx.lineWidth = 3 * lineScale;
+      ctx.setLineDash([]);
+      break;
+    case 'canal':
+      // Canal：青太線
+      ctx.strokeStyle = "#0066cc";
+      ctx.lineWidth = 2.5 * lineScale;
+      ctx.setLineDash([]);
+      break;
+    case 'lakeBlock':
+      // Lake Block：青細線
+      ctx.strokeStyle = "#0088ff";
+      ctx.lineWidth = 1.5 * lineScale;
+      ctx.setLineDash([]);
+      break;
+    default:
+      ctx.strokeStyle = "#555";
+      ctx.lineWidth = 2 * lineScale;
+      ctx.setLineDash([]);
+  }
+
   ctx.beginPath();
   ctx.moveTo(x, y);
-  ctx.lineTo(x + hexSize * Math.cos(angle), y + hexSize * Math.sin(angle));
-  ctx.strokeStyle = "#555";
-  ctx.lineWidth = 2 * lineScale;
+  ctx.lineTo(endX, endY);
   ctx.stroke();
+
+  ctx.restore();
+}
+
+// 地形アイコン描画
+function drawTerrainIcon(ctx, x, y, hex, scale) {
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // base地形
+  if (hex.base === "lake") {
+    ctx.fillStyle = "#0066cc";
+    ctx.font = `bold ${14 * scale}px sans-serif`;
+    ctx.fillText("~", x, y - 8 * scale);
+  } else if (hex.base === "swamp") {
+    ctx.fillStyle = "#2d5016";
+    ctx.font = `bold ${12 * scale}px sans-serif`;
+    ctx.fillText("S", x, y - 8 * scale);
+  } else if (hex.base === "sand") {
+    ctx.fillStyle = "#996600";
+    ctx.font = `bold ${10 * scale}px sans-serif`;
+    ctx.fillText("•••", x, y - 8 * scale);
+  }
+
+  // overlay地形
+  if (hex.overlay?.chineseFarm) {
+    ctx.strokeStyle = "#6699cc";
+    ctx.lineWidth = 1 * scale;
+    const s = 6 * scale;
+    // 格子
+    ctx.beginPath();
+    ctx.moveTo(x - s, y - s);
+    ctx.lineTo(x + s, y - s);
+    ctx.lineTo(x + s, y + s);
+    ctx.lineTo(x - s, y + s);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y - s);
+    ctx.lineTo(x, y + s);
+    ctx.moveTo(x - s, y);
+    ctx.lineTo(x + s, y);
+    ctx.stroke();
+  } else if (hex.overlay?.elevatedSand) {
+    ctx.fillStyle = "#cc6600";
+    ctx.font = `bold ${12 * scale}px sans-serif`;
+    ctx.fillText("△", x, y - 8 * scale);
+  } else if (hex.overlay?.barLev) {
+    ctx.fillStyle = "#666";
+    ctx.font = `bold ${10 * scale}px sans-serif`;
+    ctx.fillText("▣", x + 10 * scale, y - 10 * scale);
+  }
 }
 
 // マップ全体を描画
@@ -214,21 +308,45 @@ export function render(showIds = true) {
     drawHex(x, y, effectiveHexSize);
     ctx.fillStyle = terrainColor(hex);
     ctx.fill();
-    ctx.strokeStyle = "#444";
+    ctx.strokeStyle = "#666666";
     ctx.lineWidth = 1 * effectiveScale;
     ctx.stroke();
 
-    // Roads
-    if (hex.edges?.road) {
-      hex.edges.road.forEach(dir => drawRoad(x, y, dir, effectiveHexSize, effectiveScale));
+    // Edges（道路・地形線）
+    if (hex.edges) {
+      // Roads（太線）
+      if (hex.edges.road) {
+        hex.edges.road.forEach(dir => drawEdge(x, y, dir, effectiveHexSize, effectiveScale, 'road'));
+      }
+      // Trails（細い破線）
+      if (hex.edges.trail) {
+        hex.edges.trail.forEach(dir => drawEdge(x, y, dir, effectiveHexSize, effectiveScale, 'trail'));
+      }
+      // Ridge（二重線）
+      if (hex.edges.ridge) {
+        hex.edges.ridge.forEach(dir => drawEdge(x, y, dir, effectiveHexSize, effectiveScale, 'ridge'));
+      }
+      // Canal（青太線）
+      if (hex.edges.canal) {
+        hex.edges.canal.forEach(dir => drawEdge(x, y, dir, effectiveHexSize, effectiveScale, 'canal'));
+      }
+      // Lake Block（青細線）
+      if (hex.edges.lakeBlock) {
+        hex.edges.lakeBlock.forEach(dir => drawEdge(x, y, dir, effectiveHexSize, effectiveScale, 'lakeBlock'));
+      }
     }
 
-    // Hex ID
-    if (showIds) {
+    // Hex ID（トグル対応）
+    if (showIds && displaySettings.showHexId) {
       ctx.fillStyle = "#000";
       ctx.font = `${10 * effectiveScale}px sans-serif`;
       ctx.textAlign = "center";
       ctx.fillText(hex.id, x, y + 3 * effectiveScale);
+    }
+
+    // 地形アイコン（トグル対応）
+    if (displaySettings.showTerrainIcon) {
+      drawTerrainIcon(ctx, x, y, hex, effectiveScale);
     }
 
     // Matzmed highlight
