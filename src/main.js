@@ -13,7 +13,12 @@ import './debug.js';
 // ===========================
 let turnDisplay, phaseDisplay, logContent, nextPhaseBtn, attackBtn;
 let gameOverModal, gameOverTitle, gameOverMessage, restartBtn;
-let attackerListElement, defenderInfoElement;
+
+// 表示トグル状態
+export const displaySettings = {
+  showHexId: true,
+  showTerrainIcon: true
+};
 
 // ===========================
 // UI更新関数
@@ -21,6 +26,9 @@ let attackerListElement, defenderInfoElement;
 function updateUI() {
   turnDisplay.textContent = gameState.turn;
   phaseDisplay.textContent = `${gameState.phase}${gameState.isNight ? ' (Night)' : ''}`;
+
+  // ターントラック更新
+  updateTurnTrack();
 
   // ログ更新
   logContent.innerHTML = '';
@@ -48,33 +56,17 @@ function updateUI() {
   }
 }
 
-// 戦闘UI更新関数
-function updateCombatUI(attackers, defender) {
-  if (!attackerListElement || !defenderInfoElement) return;
-
-  // 攻撃ユニット一覧を更新
-  if (!attackers || attackers.length === 0) {
-    attackerListElement.innerHTML = '<p class="info-text">攻撃ユニットなし</p>';
-  } else {
-    attackerListElement.innerHTML = '<h4>攻撃側:</h4>';
-    attackers.forEach(unit => {
-      const div = document.createElement('div');
-      div.className = 'combat-unit-entry';
-      div.textContent = `${unit.id} (戦闘力: ${unit.combatStrength || 1})`;
-      attackerListElement.appendChild(div);
-    });
-  }
-
-  // 防御ユニット情報を更新
-  if (!defender) {
-    defenderInfoElement.innerHTML = '<p class="info-text">防御ユニットなし</p>';
-  } else {
-    defenderInfoElement.innerHTML = '<h4>防御側:</h4>';
-    const div = document.createElement('div');
-    div.className = 'combat-unit-entry';
-    div.textContent = `${defender.id} (戦闘力: ${defender.combatStrength || 1})`;
-    defenderInfoElement.appendChild(div);
-  }
+// ターントラック更新関数
+function updateTurnTrack() {
+  const cells = document.querySelectorAll('.turn-cell');
+  cells.forEach(cell => {
+    const turn = parseInt(cell.dataset.turn);
+    if (turn === gameState.turn) {
+      cell.classList.add('active');
+    } else {
+      cell.classList.remove('active');
+    }
+  });
 }
 
 function redrawAll() {
@@ -127,10 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
   nextPhaseBtn = document.getElementById('next-phase-btn');
   attackBtn = document.getElementById('attack-btn');
 
-  // 戦闘UI要素取得
-  attackerListElement = document.getElementById('attacker-list');
-  defenderInfoElement = document.getElementById('defender-info');
-
   // ゲーム終了モーダル要素取得
   gameOverModal = document.getElementById('game-over-modal');
   gameOverTitle = document.getElementById('game-over-title');
@@ -153,6 +141,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // 入力ハンドラ初期化（移動・戦闘UI）
   initInputHandler(canvas, attackBtn);
 
+  // 表示トグルイベントリスナー
+  const toggleHexId = document.getElementById('toggle-hex-id');
+  const toggleTerrainIcon = document.getElementById('toggle-terrain-icon');
+
+  if (toggleHexId) {
+    toggleHexId.addEventListener('change', (e) => {
+      displaySettings.showHexId = e.target.checked;
+      redrawAll();
+    });
+  }
+
+  if (toggleTerrainIcon) {
+    toggleTerrainIcon.addEventListener('change', (e) => {
+      displaySettings.showTerrainIcon = e.target.checked;
+      redrawAll();
+    });
+  }
+
   // イベントリスナー
   nextPhaseBtn.addEventListener('click', () => {
     advancePhase();
@@ -171,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // デバッグ用にUI更新関数をグローバルに公開
   if (typeof window !== 'undefined') {
     window.updateUI = updateUI;
-    window.updateCombatUI = updateCombatUI;  // 戦闘UI更新
     window.redrawAll = redrawAll;
     window.handleResize = handleResize;  // デバッグ用
   }

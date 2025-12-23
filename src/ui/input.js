@@ -68,7 +68,6 @@ function selectAttacker(unit) {
     console.log(`Attacker added: ${unit.id}`);
   }
   updateAttackButton();
-  if (window.updateCombatUI) window.updateCombatUI(selectedAttackers, selectedDefender);
 }
 
 function toggleAttacker(unit) {
@@ -81,21 +80,18 @@ function toggleAttacker(unit) {
     console.log(`Attacker added: ${unit.id}`);
   }
   updateAttackButton();
-  if (window.updateCombatUI) window.updateCombatUI(selectedAttackers, selectedDefender);
 }
 
 function selectDefender(unit) {
   selectedDefender = unit;
   console.log(`Defender selected: ${unit.id}`);
   updateAttackButton();
-  if (window.updateCombatUI) window.updateCombatUI(selectedAttackers, selectedDefender);
 }
 
 function clearCombatSelection() {
   selectedAttackers = [];
   selectedDefender = null;
   hideAttackButton();
-  if (window.updateCombatUI) window.updateCombatUI([], null);
 }
 
 // ===========================
@@ -143,7 +139,7 @@ function executeCombat() {
   });
 
   if (result) {
-    const msg = `戦闘: 攻撃力${result.attackStrength} vs 防御力${result.defenseStrength}, 修正後差分${result.diff}, ダイス${result.die}, 結果${result.result}`;
+    const msg = `Combat: ${result.attackStrength} vs ${result.defenseStrength}, Column ${result.column}, Die ${result.die} → ${result.result}`;
     console.log(msg);
     gameState.log.push(msg);
   }

@@ -1,7 +1,7 @@
 // STEP3: Unit placement & reinforcement integration
 // 前提: hexes.js (STEP1), map renderer (STEP2)
 
-import hexes from "./hexes.js";
+import hexes, { ENTRY_HEXES } from "./hexes.js";
 
 // ----------------------------
 // 1. Unit Data Definition
@@ -43,14 +43,14 @@ export const units = {
 
 export const reinforcements = [
   // Israeli
-  { turn:2, id:"ISR_AMIR1", side:"ISR", type:"mech", strength:4, move:12, entry:"1708" },
-  { turn:2, id:"ISR_AMIR2", side:"ISR", type:"mech", strength:4, move:12, entry:"1708" },
+  { turn:2, id:"ISR_AMIR1", side:"ISR", type:"mech", strength:4, move:12, entry: ENTRY_HEXES.A },
+  { turn:2, id:"ISR_AMIR2", side:"ISR", type:"mech", strength:4, move:12, entry: ENTRY_HEXES.A },
 
-  { turn:3, id:"ISR_BARAM4", side:"ISR", type:"bridge", strength:1, move:8, entry:"1708" },
+  { turn:3, id:"ISR_BARAM4", side:"ISR", type:"bridge", strength:1, move:8, entry: ENTRY_HEXES.A },
 
   // Egyptian
-  { turn:2, id:"EGY_231", side:"EGY", type:"inf", strength:3, move:10, entry:"0407" },
-  { turn:5, id:"EGY_251", side:"EGY", type:"inf", strength:4, move:10, entry:"0921" }
+  { turn:2, id:"EGY_231", side:"EGY", type:"inf", strength:3, move:10, entry: ENTRY_HEXES.B },
+  { turn:5, id:"EGY_251", side:"EGY", type:"inf", strength:4, move:10, entry: ENTRY_HEXES.C }
 ];
 
 // ----------------------------
@@ -58,24 +58,69 @@ export const reinforcements = [
 // ----------------------------
 
 function unitColor(unit) {
-  return unit.side === "ISR" ? "#0033cc" : "#cc0000";
+  return unit.side === "ISR" ? "#0066ff" : "#cc0000";
+}
+
+function typeToString(type) {
+  const typeMap = {
+    "inf": "INF",
+    "armor": "ARM",
+    "mech": "MECH",
+    "cav": "CAV",
+    "bridge": "BR"
+  };
+  return typeMap[type] || type.toUpperCase();
 }
 
 function drawUnit(ctx, hex, unit) {
   const { x, y } = hex;
-  ctx.beginPath();
-  ctx.arc(x, y, 10, 0, Math.PI * 2);
+  const w = 22;
+  const h = 22;
+  const radius = 3;
+
+  // 角丸四角の背景
   ctx.fillStyle = unitColor(unit);
+  ctx.beginPath();
+  ctx.moveTo(x - w/2 + radius, y - h/2);
+  ctx.lineTo(x + w/2 - radius, y - h/2);
+  ctx.quadraticCurveTo(x + w/2, y - h/2, x + w/2, y - h/2 + radius);
+  ctx.lineTo(x + w/2, y + h/2 - radius);
+  ctx.quadraticCurveTo(x + w/2, y + h/2, x + w/2 - radius, y + h/2);
+  ctx.lineTo(x - w/2 + radius, y + h/2);
+  ctx.quadraticCurveTo(x - w/2, y + h/2, x - w/2, y + h/2 - radius);
+  ctx.lineTo(x - w/2, y - h/2 + radius);
+  ctx.quadraticCurveTo(x - w/2, y - h/2, x - w/2 + radius, y - h/2);
+  ctx.closePath();
   ctx.fill();
+
+  // 枠
   ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
+  // 左上：strength
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 10px sans-serif";
+  ctx.font = "bold 9px sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(unit.strength, x - w/2 + 3, y - h/2 + 2);
+
+  // 右上：move
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  ctx.fillText(unit.move, x + w/2 - 3, y - h/2 + 2);
+
+  // 中央：type
+  ctx.font = "bold 7px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(unit.strength, x, y);
+  ctx.fillText(typeToString(unit.type), x, y);
+
+  // 下部：id（小さく）
+  ctx.font = "5px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillText(unit.id, x, y + h/2 - 1);
 }
 
 // ----------------------------
