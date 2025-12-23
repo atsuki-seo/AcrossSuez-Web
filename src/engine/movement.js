@@ -58,13 +58,6 @@ function baseMoveCost(hex) {
   return 1; // clear / barLev
 }
 
-function edgeCost(fromHex, toHex) {
-  if (!fromHex.edges) return 0;
-  // Ridge cost (simplified: if ridge exists on any edge)
-  if (fromHex.edges.ridge) return 2;
-  return 0;
-}
-
 function dirFromTo(fromHex, toHex) {
   const dq = toHex.q - fromHex.q;
   const dr = toHex.r - fromHex.r;
@@ -74,14 +67,62 @@ function dirFromTo(fromHex, toHex) {
   return null;
 }
 
-function roadCost(fromHex, toHex) {
+// Road判定（方向チェック付き）
+function hasRoad(fromHex, toHex) {
   const roadDirs = fromHex.edges?.road;
-  if (!roadDirs || roadDirs.length === 0) return null;
+  if (!roadDirs || roadDirs.length === 0) return false;
 
   const dir = dirFromTo(fromHex, toHex);
-  if (dir === null) return null;
+  if (dir === null) return false;
 
-  return roadDirs.includes(dir) ? 0.5 : null;
+  return roadDirs.includes(dir);
+}
+
+// Trail判定（方向チェック付き）
+function hasTrail(fromHex, toHex) {
+  const trailDirs = fromHex.edges?.trail;
+  if (!trailDirs || trailDirs.length === 0) return false;
+
+  const dir = dirFromTo(fromHex, toHex);
+  if (dir === null) return false;
+
+  return trailDirs.includes(dir);
+}
+
+// Ridge判定（方向チェック付き）
+function hasRidge(fromHex, toHex) {
+  const ridgeDirs = fromHex.edges?.ridge;
+  if (!ridgeDirs || ridgeDirs.length === 0) return false;
+
+  const dir = dirFromTo(fromHex, toHex);
+  if (dir === null) return false;
+
+  return ridgeDirs.includes(dir);
+}
+
+// 統合移動コスト計算（優先順位: Road > Trail > Terrain + Ridge）
+function getMoveCost(fromHex, toHex) {
+  // 1. Road優先（0.5 MP、Ridgeも無視）
+  if (hasRoad(fromHex, toHex)) {
+    return 0.5;
+  }
+
+  // 2. Trail（2 MP + Ridge加算あり）
+  if (hasTrail(fromHex, toHex)) {
+    let cost = 2;
+    if (hasRidge(fromHex, toHex)) {
+      cost += 2;
+    }
+    return cost;
+  }
+
+  // 3. 通常地形コスト + Ridge加算
+  let cost = baseMoveCost(toHex);
+  if (hasRidge(fromHex, toHex)) {
+    cost += 2;
+  }
+
+  return cost;
 }
 
 // ----------------------------
@@ -111,9 +152,7 @@ export function getReachableHexes(unit) {
       // Cannot enter enemy-occupied hex
       if (Object.values(gameState.units).some(u => u.hex === next.id)) return;
 
-      let cost = baseMoveCost(next) + edgeCost(hex, next);
-      const road = roadCost(hex, next);
-      if (road !== null) cost = road;
+      const cost = getMoveCost(hex, next);
 
       const remaining = mp - cost;
       if (remaining < 0) return;
@@ -156,9 +195,7 @@ export function getReachableHexesWithCost(unit) {
       // Cannot enter enemy-occupied hex
       if (Object.values(gameState.units).some(u => u.hex === next.id)) return;
 
-      let cost = baseMoveCost(next) + edgeCost(hex, next);
-      const road = roadCost(hex, next);
-      if (road !== null) cost = road;
+      const cost = getMoveCost(hex, next);
 
       const remaining = mp - cost;
       const newTotalCost = totalCost + cost;
