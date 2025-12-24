@@ -2,7 +2,7 @@
 // SPI Across Suez 準拠の戦闘処理ロジック
 
 import hexes from "./hexes.js";
-import { gameState, canCombat } from "./gamestate.js";
+import { gameState, canCombat, canBombard, useIsraelArtillery, canUseIsraelArtillery } from "./gamestate.js";
 import { computeZOC, getNeighbors } from "./movement.js";
 
 // ----------------------------
@@ -42,7 +42,7 @@ function rollDie() {
 // 3. 戦闘解決
 // ----------------------------
 
-export function resolveCombat({ attackers, defenderId }) {
+export function resolveCombat({ attackers, defenderId, useArtillery = false }) {
   if (!canCombat()) return null;
 
   const defender = gameState.units[defenderId];
@@ -53,6 +53,19 @@ export function resolveCombat({ attackers, defenderId }) {
   const defenseStrength = defender.strength;
 
   let diff = attackStrength - defenseStrength;
+
+  // 諸兵科連合効果（Combined Arms）: armor + inf/mech で +1 シフト [SPI Rule 8.0]
+  const hasArmor = attackers.some(id => gameState.units[id].type === 'armor');
+  const hasInfantry = attackers.some(id => ['inf', 'mech'].includes(gameState.units[id].type));
+  if (hasArmor && hasInfantry) diff += 1;
+
+  // イスラエル軍砲兵支援 [SPI Rule 13.3, 13.4]
+  let artilleryUsed = false;
+  if (useArtillery && canUseIsraelArtillery()) {
+    useIsraelArtillery();
+    diff += 1;
+    artilleryUsed = true;
+  }
 
   // 地形修正（左シフト）
   const defHex = hexes[defender.hex];
@@ -65,7 +78,16 @@ export function resolveCombat({ attackers, defenderId }) {
 
   applyCombatResult(result, attackers, defender);
 
-  return { column, die, result, attackStrength, defenseStrength, diff };
+  return {
+    column,
+    die,
+    result,
+    attackStrength,
+    defenseStrength,
+    diff,
+    combinedArms: hasArmor && hasInfantry,
+    artilleryUsed
+  };
 }
 
 // ----------------------------
@@ -144,6 +166,81 @@ function eliminateUnit(unitId) {
   const unit = gameState.units[unitId];
   if (!unit) return;
   unit.hex = null;
+}
+
+// ----------------------------
+// 8. エジプト軍砲撃 [SPI Rule 13.1]
+// ----------------------------
+
+/**
+ * エジプト軍砲撃を解決
+ * - EGY_BOMBARDフェイズで使用可能
+ * - 隣接するイスラエル軍ユニット最大2体を対象
+ * - 1d6で「1」が出れば除去
+ * @param {string[]} targetIds - 対象ユニットID（最大2）
+ * @returns {Object[]} - 各対象の砲撃結果
+ */
+export function resolveEgyptBombard(targetIds) {
+  if (!canBombard()) return [];
+  if (gameState.egyBombardUsed) return [];
+
+  // 最大2体まで
+  const targets = targetIds.slice(0, 2);
+
+  const results = targets.map(id => {
+    const unit = gameState.units[id];
+    if (!unit || !unit.hex || unit.side !== "ISR") {
+      return { id, die: 0, result: "invalid" };
+    }
+
+    // 隣接チェック：いずれかのエジプト軍ユニットに隣接しているか
+    const isAdjacentToEgyptian = Object.values(gameState.units).some(egyUnit => {
+      if (egyUnit.side !== "EGY" || !egyUnit.hex) return false;
+      const neighbors = getNeighbors(hexes[egyUnit.hex]);
+      return neighbors.some(n => n.id === unit.hex);
+    });
+
+    if (!isAdjacentToEgyptian) {
+      return { id, die: 0, result: "not_adjacent" };
+    }
+
+    const die = rollDie();
+    if (die === 1) {
+      eliminateUnit(id);
+      return { id, die, result: "eliminated" };
+    }
+    return { id, die, result: "miss" };
+  });
+
+  gameState.egyBombardUsed = true;
+  return results;
+}
+
+/**
+ * 砲撃対象として有効なイスラエル軍ユニットを取得
+ * @returns {Object[]} - 隣接しているイスラエル軍ユニットの配列
+ */
+export function getValidBombardTargets() {
+  if (!canBombard()) return [];
+
+  const targets = [];
+
+  Object.values(gameState.units).forEach(isrUnit => {
+    if (isrUnit.side !== "ISR" || !isrUnit.hex) return;
+
+    // いずれかのエジプト軍ユニットに隣接しているかチェック
+    const isAdjacentToEgyptian = Object.values(gameState.units).some(egyUnit => {
+      if (egyUnit.side !== "EGY" || !egyUnit.hex) return false;
+      const neighbors = getNeighbors(hexes[egyUnit.hex]);
+      return neighbors.some(n => n.id === isrUnit.hex);
+    });
+
+    if (isAdjacentToEgyptian) {
+      targets.push(isrUnit);
+    }
+  });
+
+  return targets;
 }
 
 // STEP6 completes combat resolution logic
