@@ -138,6 +138,11 @@ export function getReachableHexes(unit) {
 
   const enemyZOC = computeZOC(unit.side === "ISR" ? "EGY" : "ISR");
 
+  // Turn 1 混乱ルール [SPI Rule 9.0]: 敵ZOC内のユニットは移動不可
+  if (gameState.turn === 1 && enemyZOC.has(unit.hex)) {
+    return [];
+  }
+
   const visited = new Map(); // hexId -> remaining MP
   const frontier = [{ hex: startHex, mp: maxMP }];
 
@@ -182,6 +187,11 @@ export function getReachableHexesWithCost(unit) {
   if (maxMP <= 0) return [];
 
   const enemyZOC = computeZOC(unit.side === "ISR" ? "EGY" : "ISR");
+
+  // Turn 1 混乱ルール [SPI Rule 9.0]: 敵ZOC内のユニットは移動不可
+  if (gameState.turn === 1 && enemyZOC.has(unit.hex)) {
+    return [];
+  }
 
   const visited = new Map(); // hexId -> { remainingMP, cost }
   const frontier = [{ hex: startHex, mp: maxMP, totalCost: 0 }];
