@@ -139,7 +139,27 @@
 
         <section id="action-controls">
           <h3 id="action-controls-title">アクション</h3>
+          <!-- 砲兵支援チェックボックス（イスラエル戦闘フェイズ用） -->
+          <div id="artillery-support" class="hidden">
+            <label class="toggle-item">
+              <input type="checkbox" id="use-artillery">
+              <span>砲兵支援 (+1)</span>
+            </label>
+            <span id="artillery-remaining" class="status-text">残: 1回</span>
+          </div>
           <button id="attack-btn" disabled>攻撃</button>
+          <button id="cross-suez-btn" disabled>渡河</button>
+          <!-- 砲撃ボタン（エジプト軍砲撃フェイズ用） -->
+          <div id="bombard-controls" class="hidden">
+            <p id="bombard-instruction" class="status-text">隣接する敵を最大2体選択</p>
+            <button id="bombard-btn" disabled>砲撃実行</button>
+          </div>
+        </section>
+
+        <section id="cross-suez-box">
+          <h3>渡河済みユニット</h3>
+          <div id="cross-suez-count" class="status-text">0 ユニット</div>
+          <div id="cross-suez-list"></div>
         </section>
 
         <section id="game-log">

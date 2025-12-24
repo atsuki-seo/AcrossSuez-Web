@@ -3,7 +3,7 @@ import './style.css';
 import { initRenderer, render, hexToPixel, getContext, updateCanvasSize, restoreInitialViewport } from './ui/renderer.js';
 import { placeUnits } from './engine/units.js';
 import { gameState, advancePhase } from './engine/gamestate.js';
-import { initInputHandler, clearSelection } from './ui/input.js';
+import { initInputHandler, clearSelection, updatePhaseUI } from './ui/input.js';
 
 // デバッグユーティリティ（開発環境でのみ）
 import './debug.js';
@@ -11,8 +11,9 @@ import './debug.js';
 // ===========================
 // UI要素
 // ===========================
-let turnDisplay, phaseDisplay, logContent, nextPhaseBtn, attackBtn;
+let turnDisplay, phaseDisplay, logContent, nextPhaseBtn, attackBtn, crossSuezBtn;
 let gameOverModal, gameOverTitle, gameOverMessage, restartBtn;
+let crossSuezCountDisplay, crossSuezListDisplay;
 
 // 表示トグル状態
 export const displaySettings = {
@@ -29,6 +30,9 @@ function updateUI() {
 
   // ターントラック更新
   updateTurnTrack();
+
+  // 渡河ユニット表示更新
+  updateCrossSuezBox();
 
   // ログ更新
   logContent.innerHTML = '';
@@ -65,6 +69,26 @@ function updateTurnTrack() {
       cell.classList.add('active');
     } else {
       cell.classList.remove('active');
+    }
+  });
+}
+
+// 渡河ユニット表示更新関数
+function updateCrossSuezBox() {
+  if (!crossSuezCountDisplay || !crossSuezListDisplay) return;
+
+  const count = gameState.crossSuezBox.length;
+  crossSuezCountDisplay.textContent = `${count} ユニット`;
+
+  // ユニット一覧表示
+  crossSuezListDisplay.innerHTML = '';
+  gameState.crossSuezBox.forEach(unitId => {
+    const unit = gameState.units[unitId];
+    if (unit) {
+      const item = document.createElement('div');
+      item.className = 'cross-suez-item';
+      item.textContent = `${unitId} (${unit.strength})`;
+      crossSuezListDisplay.appendChild(item);
     }
   });
 }
@@ -118,12 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
   logContent = document.getElementById('log-content');
   nextPhaseBtn = document.getElementById('next-phase-btn');
   attackBtn = document.getElementById('attack-btn');
+  crossSuezBtn = document.getElementById('cross-suez-btn');
 
   // ゲーム終了モーダル要素取得
   gameOverModal = document.getElementById('game-over-modal');
   gameOverTitle = document.getElementById('game-over-title');
   gameOverMessage = document.getElementById('game-over-message');
   restartBtn = document.getElementById('restart-btn');
+
+  // 渡河ユニット表示要素取得
+  crossSuezCountDisplay = document.getElementById('cross-suez-count');
+  crossSuezListDisplay = document.getElementById('cross-suez-list');
 
   // レンダラー初期化
   initRenderer(canvas);
@@ -138,8 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // UI初期化
   updateUI();
 
-  // 入力ハンドラ初期化（移動・戦闘UI）
-  initInputHandler(canvas, attackBtn);
+  // 入力ハンドラ初期化（移動・戦闘・渡河UI）
+  initInputHandler(canvas, attackBtn, crossSuezBtn);
 
   // 表示設定パネルのエクスパンド・コラプス
   const displayTogglesHeader = document.getElementById('display-toggles-header');
@@ -182,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   nextPhaseBtn.addEventListener('click', () => {
     advancePhase();
     clearSelection(); // フェイズ変更時に選択解除
+    updatePhaseUI();  // フェイズに応じたUI更新（砲撃モード等）
     redrawAll();
     updateUI();
   });
