@@ -28,10 +28,16 @@ let viewportTransform = {
   zoom: 1.0    // ズーム倍率（ユーザー操作）
 };
 
+// 初期ビューポート状態（リセット用）
+let initialViewportTransform = {
+  x: 0,
+  y: 0,
+  zoom: 1.0
+};
+
 // ビューポート変換をリセット（初期化・リサイズ時）
 export function resetViewportTransform() {
-  // マップを画面中央に配置（初期オフセット）
-  // 中央ヘクス（col=9, row=10）のワールド座標を計算
+  // マップ中央を画面中央に配置（シンプル実装）
   const centerHex = hexes["0910"];
   if (!centerHex) {
     console.error("Center hex not found");
@@ -41,12 +47,27 @@ export function resetViewportTransform() {
   const mapCenterX = currentHexSize * Math.sqrt(3) * (centerHex.q + 0.5 * (centerHex.r & 1));
   const mapCenterY = currentHexSize * 1.5 * centerHex.r;
 
-  // 画面中央に配置
+  console.log(`DEBUG: currentWidth=${currentWidth}, currentHeight=${currentHeight}`);
+  console.log(`DEBUG: currentHexSize=${currentHexSize}`);
+  console.log(`DEBUG: mapCenterX=${mapCenterX.toFixed(2)}, mapCenterY=${mapCenterY.toFixed(2)}`);
+
+  // デフォルトズーム1.0で画面中央に配置
   viewportTransform.x = currentWidth / 2 - mapCenterX;
   viewportTransform.y = currentHeight / 2 - mapCenterY;
   viewportTransform.zoom = 1.0;
 
-  console.log(`Viewport reset: centerHex=${centerHex.id} (q=${centerHex.q},r=${centerHex.r}), mapCenter=(${mapCenterX.toFixed(0)},${mapCenterY.toFixed(0)}), offset=(${viewportTransform.x.toFixed(0)}, ${viewportTransform.y.toFixed(0)}), zoom=${viewportTransform.zoom}`);
+  // 初期状態を保存
+  initialViewportTransform = { ...viewportTransform };
+
+  console.log(`Viewport reset: zoom=${viewportTransform.zoom.toFixed(2)}, offset=(${viewportTransform.x.toFixed(0)}, ${viewportTransform.y.toFixed(0)})`);
+}
+
+// 初期ビューポートに戻す（リセットボタン用）
+export function restoreInitialViewport() {
+  viewportTransform.x = initialViewportTransform.x;
+  viewportTransform.y = initialViewportTransform.y;
+  viewportTransform.zoom = initialViewportTransform.zoom;
+  console.log(`Viewport restored to initial state: zoom=${viewportTransform.zoom.toFixed(2)}`);
 }
 
 // Getter/Setter
@@ -80,8 +101,8 @@ export function worldToScreen(worldX, worldY) {
 export function updateCanvasSize() {
   if (!canvas) return;
 
-  // コンテナサイズを取得
-  const container = canvas.parentElement;
+  // #map-containerのサイズを取得（#canvas-wrapperではなく）
+  const container = canvas.parentElement.parentElement; // #map-container
   const containerWidth = container.clientWidth - 40;   // padding 20px * 2
   const containerHeight = container.clientHeight - 40;
 
