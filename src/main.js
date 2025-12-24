@@ -1,6 +1,6 @@
 // Across Suez - メインエントリーポイント
 import './style.css';
-import { initRenderer, render, hexToPixel, getContext, updateCanvasSize } from './ui/renderer.js';
+import { initRenderer, render, hexToPixel, getContext, updateCanvasSize, restoreInitialViewport } from './ui/renderer.js';
 import { placeUnits } from './engine/units.js';
 import { gameState, advancePhase } from './engine/gamestate.js';
 import { initInputHandler, clearSelection } from './ui/input.js';
@@ -141,6 +141,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // 入力ハンドラ初期化（移動・戦闘UI）
   initInputHandler(canvas, attackBtn);
 
+  // 表示設定パネルのエクスパンド・コラプス
+  const displayTogglesHeader = document.getElementById('display-toggles-header');
+  const displayTogglesPanel = document.getElementById('display-toggles');
+
+  if (displayTogglesHeader && displayTogglesPanel) {
+    displayTogglesHeader.addEventListener('click', () => {
+      displayTogglesPanel.classList.toggle('collapsed');
+    });
+  }
+
   // 表示トグルイベントリスナー
   const toggleHexId = document.getElementById('toggle-hex-id');
   const toggleTerrainIcon = document.getElementById('toggle-terrain-icon');
@@ -155,6 +165,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (toggleTerrainIcon) {
     toggleTerrainIcon.addEventListener('change', (e) => {
       displaySettings.showTerrainIcon = e.target.checked;
+      redrawAll();
+    });
+  }
+
+  // 倍率リセットボタン
+  const resetZoomBtn = document.getElementById('reset-zoom-btn');
+  if (resetZoomBtn) {
+    resetZoomBtn.addEventListener('click', () => {
+      restoreInitialViewport();
       redrawAll();
     });
   }

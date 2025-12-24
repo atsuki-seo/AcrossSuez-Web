@@ -101,21 +101,32 @@
       </aside>
 
       <div id="map-container">
-        <canvas id="map"></canvas>
+        <!-- Canvas + UI要素をラップ -->
+        <div id="canvas-wrapper">
+          <canvas id="map"></canvas>
 
-        <!-- 表示設定フロート -->
-        <div id="display-toggles" class="float-panel">
-          <h3>表示設定</h3>
-          <div class="toggle-list">
-            <label class="toggle-item">
-              <input type="checkbox" id="toggle-hex-id" checked>
-              <span>Hex ID</span>
-            </label>
-            <label class="toggle-item">
-              <input type="checkbox" id="toggle-terrain-icon" checked>
-              <span>地形</span>
-            </label>
+          <!-- 表示設定フロート -->
+          <div id="display-toggles" class="float-panel collapsed">
+            <h3 id="display-toggles-header">
+              表示設定
+              <span class="toggle-icon">▼</span>
+            </h3>
+            <div class="toggle-list">
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-hex-id" checked>
+                <span>Hex ID</span>
+              </label>
+              <label class="toggle-item">
+                <input type="checkbox" id="toggle-terrain-icon" checked>
+                <span>地形</span>
+              </label>
+            </div>
           </div>
+
+          <!-- 倍率リセットボタン -->
+          <button id="reset-zoom-btn" class="map-control-btn" title="初期表示に戻す">
+            🏠
+          </button>
         </div>
       </div>
 
